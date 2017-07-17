@@ -1,5 +1,8 @@
 import csv
 from User import *
+from matplotlib import pyplot as plt
+from matplotlib import style
+import numpy
 import datetime
 import statistics
 
@@ -13,6 +16,12 @@ WEEK_PROP = PROP_SUM - DISTANCE_PROP
 
 DISTANCE_LEN_PROP = 5
 DISTANCE_SPR_PROP = PROP_SUM - DISTANCE_LEN_PROP
+
+
+standArray = [0,1,2,3,4,5,6,7,8,9,10]
+results = []
+coverageAr = []
+top3precis = []
 
 
 def main():
@@ -30,16 +39,68 @@ def main():
             for user in userList:
                 if user.userID == row[1]:
                     found = True
-                    user.append_user(row[2], row[3], row[5], row[6], row[7], row[8], row[9], row[10])
+                    user.append_user(row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12])
             if not found:
-                userList.append(User(row[1], row[2], row[3], row[5], row[6], row[7], row[8], row[9], row[10]))
+                userList.append(User(row[1], row[2], row[3], row[4], row[5], row[6], row[7], row[8], row[9], row[10], row[11], row[12]))
     for user in userList:
-        user_analysis(user)
+        #user_analysis(user)
+        standard_approach(user)
+        '''
         if user.gbUser == 0:
             userStats[0] += 1
         else:
             userStats[1] += 1
-    print("there are", userStats[0], "good users and", userStats[1],  "bad users")
+        '''
+    #print("there are", userStats[0], "good users and", userStats[1],  "bad users")
+    plot(coverageAr, top3precis)
+
+
+def plot(x, y):
+    plt.plot(x, y, 'o')
+
+    z = numpy.polyfit(x, y, 1)
+    p = numpy.poly1d(z)
+    plt.plot(x, p(x), "r--")
+
+    plt.title('Coverage vs Precision')
+    plt.ylabel('Precision')
+    plt.xlabel('Coverage')
+
+    plt.legend()
+
+    plt.grid(True, color='k')
+
+    plt.show()
+
+
+def standard_approach(user):
+    std_coverage(user)
+    std_top3precision(user)
+
+
+def std_coverage(user):
+    N = len([bool(x) for x in remove_na(user.isPredicted)])
+    sumNum = sum([int(x) for x in remove_na(user.numpred)])
+    coverageAr.append(sumNum/N)
+
+
+def remove_na(inputAr):
+    outputAr = []
+    for value in inputAr:
+        if value != 'NA':
+            outputAr.append(value)
+    return outputAr
+
+
+def std_top3precision(user):
+    sumNum = sum([int(x) for x in remove_na(user.numpred)])
+    rankVal = [int(x) > 0 for x in remove_na(user.rank)]
+    sumRank = 0
+    for val in rankVal:
+        if val == True:
+            sumRank += 1
+    print(sumRank)
+    top3precis.append(sumRank)
 
 
 def user_analysis(user):
@@ -47,6 +108,7 @@ def user_analysis(user):
     weekVal = week_analysis(user)
     result = (DISTANCE_PROP*distanceVal + WEEK_PROP*weekVal)/100
     print(result)
+    results.append(result)
     if result > CUT_POINT:
         user.gbUser = 1
     else:
